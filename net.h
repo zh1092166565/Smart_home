@@ -19,8 +19,22 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define QUIT_STR "quit"
+#define LED_ON	1
+#define LED_OFF	2
+#define BUZER_ON	3
+#define BUZER_OFF	4
+#define GYR_ON	5
+#define GYR_OFF	6
+#define CAMERA 7
+
+
+
 
 #endif
 

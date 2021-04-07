@@ -14,8 +14,10 @@
 #define RED GPIONO(0,28)
 #define GREEN GPIONO(4,13)
 #define BLUE GPIONO(1,12)
+#define BUZER GPIONO(2,14)
 
-unsigned int led[] = {RED,GREEN, BLUE};
+
+unsigned int led[] = {RED,GREEN, BLUE,BUZER};
 
 
 //设计全局的设别队形
@@ -59,23 +61,25 @@ ssize_t led_dev_write (struct file *file, const char __user *buf, size_t count, 
 		printk("copy_from_user error \n");
 		return -EFAULT;
 	}
-	if (val > 0)
-	{	int flg;
-		writel(readl(my_led->reg_bas[0]) | (1<<28), my_led->reg_bas[0]);
-		writel(readl(my_led->reg_bas[3]) | (1<<14), my_led->reg_bas[3]);
-		flg = readl(my_led->reg_bas[0]);
-		printk("flg = %d\n",flg);
-		printk("on led\n");
-		//writel(readl(my_led->reg_bas[2] + 0) | (1<<12), my_led->reg_bas[2] + 0);
-	}
-	else 
+	if (val == 1)
 	{	
-		int flg;
-		writel(readl(my_led->reg_bas[0]) & ~(1<<28), my_led->reg_bas[0]);
-		flg = readl(my_led->reg_bas[0]);
-		printk("flg = %d\n",flg);
+		gpio_direction_output(led[1],1);
+		printk("on led\n");
+	}
+	else if(val == 2)
+	{	
+		gpio_direction_output(led[1],0);
 		printk("off led\n");
-		//writel(readl(my_led->reg_bas[2] + 0) & ~(1<<12), my_led->reg_bas[2] + 0);
+	}
+	else if(val == 3)
+	{	
+		gpio_direction_output(led[3],1);
+		printk("on BUZER\n");
+	}
+	else if(val == 4)
+	{	
+		gpio_direction_output(led[3],0);
+		printk("off BUZER\n");
 	}
 
 	return count;
@@ -102,8 +106,21 @@ int led_prv_probe(struct platform_device *pdev)
 
 
 {
-	//int ret;
-	//int i;
+	int ret;
+	int i;
+	//申请gpio
+	for(i = 0; i < ARRAY_SIZE(led) ; i++)
+	{
+		gpio_free(led[i]);
+		ret = gpio_request(led[i],NULL);
+		if(ret)
+		{
+			printk("gpio request error \n");
+			return ret;
+		}
+		gpio_direction_output(led[i],0);
+	}
+	
 	printk("%s,%s,%d\n",__FILE__,__func__,__LINE__);
 	my_led = kzalloc(sizeof(struct my_led_dev), GFP_KERNEL);
 	if(my_led == NULL)
@@ -130,72 +147,25 @@ int led_prv_probe(struct platform_device *pdev)
 	my_led->cls = class_create(THIS_MODULE, "led_a53_cls");
 	my_led->dev = device_create(my_led->cls,NULL, MKDEV(my_led->dev_major, 0),NULL,"led0");
 
-	my_led->res[0] = platform_get_resource(pdev,IORESOURCE_IO, 0);
-	my_led->reg_bas[0] = ioremap(my_led->res[0]->start, resource_size(my_led->res[0]));
-
-	my_led->res[1] = platform_get_resource(pdev,IORESOURCE_IO, 1);
-	my_led->reg_bas[1] = ioremap(my_led->res[1]->start, resource_size(my_led->res[1]));
-
-	my_led->res[2]= platform_get_resource(pdev,IORESOURCE_IO, 2);
-	my_led->reg_bas[2] = ioremap(my_led->res[2]->start, resource_size(my_led->res[2]));
-
-	my_led->res[3]= platform_get_resource(pdev,IORESOURCE_IO, 3);
-	my_led->reg_bas[3] = ioremap(my_led->res[2]->start, resource_size(my_led->res[3]));
 
 
-	writel(readl(my_led->reg_bas[0] + 9) & ~(3<<24) , my_led->reg_bas[0] + 9);	
-	writel(readl(my_led->reg_bas[0] + 1) | (1<<28) , my_led->reg_bas[0] + 1);	
-	writel(readl(my_led->reg_bas[0] + 0) & ~(1<<28), my_led->reg_bas[0] + 0);
-
-/*
-	writel(readl(my_led->reg_bas[1] + 8) & ~(3<<26) , my_led->reg_bas[1] + 8);	
-	writel(readl(my_led->reg_bas[1] + 1) | (1<<13) , my_led->reg_bas[1] + 1);	
-	writel(readl(my_led->reg_bas[1] + 0) & ~(1<<13), my_led->reg_bas[1] + 0);
-*/
-
-
-
-
-	writel(readl(my_led->reg_bas[2] + 8) & ~(3<<24) , my_led->reg_bas[2] + 8);
-	writel(readl(my_led->reg_bas[2] + 8) | (1<<25) , my_led->reg_bas[2] + 8);
-	writel(readl(my_led->reg_bas[2] + 1) | (1<<12) , my_led->reg_bas[2] + 1);	
-	writel(readl(my_led->reg_bas[2] + 0) & ~(1<<12), my_led->reg_bas[2] + 0);
-
-	writel(readl(my_led->reg_bas[3] + 8) & ~(3<<28) , my_led->reg_bas[3] + 8);
-	writel(readl(my_led->reg_bas[3] + 8) | (1<<28) , my_led->reg_bas[3] + 8);
-	writel(readl(my_led->reg_bas[3] + 1) | (1<<14) , my_led->reg_bas[3] + 1);	
-	writel(readl(my_led->reg_bas[3] + 0) & ~(1<<14), my_led->reg_bas[3] + 0);
-/*
-
-	//申请gpio
-	for(i = 0; i < ARRAY_SIZE(led) ; i++)
-	{
-		ret = gpio_request(led[i],NULL);
-		if(ret)
-		{
-			printk("gpio request error \n");
-			return ret;
-		}
-		gpio_direction_output(led[i],0);
-	}
-*/
 	return 0;
 }
 int led_prv_remove(struct platform_device *pdev)
 {
-	//int i;
+	int i;
 	printk("%s,%s,%d\n",__FILE__,__func__,__LINE__);
 	iounmap(my_led->reg_bas);
 	device_destroy(my_led->cls, MKDEV(my_led->dev_major, 0));
 	class_destroy(my_led->cls);
 	unregister_chrdev(my_led->dev_major, "led_dev");
 	kfree(my_led);
-/*
+
 	for(i = 0 ; i < ARRAY_SIZE(led) ; i++)
 	{
 		gpio_free(led[i]);
 	}
-*/
+
 	return 0;
 	
 }

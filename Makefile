@@ -2,7 +2,7 @@ ROOTFS_DIR=/home/linux/nfs/rootfs
 
 MODULE_NAME = pla_led_pdev
 MODULE_NAME2= pla_led_pdrv
-#MODULE_NAME3= mydrv
+MODULE_NAME3= I2c_dev
 APP_NAME=epoll_server
 CLIENT_NAME=epoll_client
 
@@ -16,10 +16,10 @@ KERNEL_DIR=/home/linux/A53/kernel-3.4.39
 CUR_DIR=$(shell pwd)
 
 all:
-	$(CC) $(APP_NAME).c -o $(APP_NAME)
+	$(CC) -g $(APP_NAME).c -o $(APP_NAME) -lpthread
 	#$(CC) $(CLIENT_NAME).c -o $(CLIENT_NAME)
 	make -C $(KERNEL_DIR) M=$(CUR_DIR) modules
-	$(GG) $(CLIENT_NAME).c -o $(CLIENT_NAME)
+	$(GG) $(CLIENT_NAME).c -o $(CLIENT_NAME) -lpthread
 
 clean:
 	make -C $(KERNEL_DIR) M=$(CUR_DIR) clean
@@ -30,7 +30,7 @@ install:
 else
 obj-m += $(MODULE_NAME).o
 obj-m += $(MODULE_NAME2).o
-#obj-m += $(MODULE_NAME3).o
+obj-m += $(MODULE_NAME3).o
 
 
 endif
